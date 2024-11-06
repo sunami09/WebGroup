@@ -4,6 +4,8 @@ First thing do `flutter pub get`
 
 # Members
 - Sunami Dasgupta
+- Harrison Lloyd
+
 
 
 # How to do a commit
