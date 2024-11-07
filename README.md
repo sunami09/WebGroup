@@ -3,7 +3,7 @@
 First thing do `flutter pub get`
 
 # Members
-- Sunami Dasgupta
+- Sunami Dasgupta (Sunami 09)
 - Harrison Lloyd
 - Nick Kaplan 
 
