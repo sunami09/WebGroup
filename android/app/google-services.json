@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "310434481826",
+    "project_id": "webgro-7929c",
+    "storage_bucket": "webgro-7929c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:310434481826:android:504e8aad042ad7a60879fb",
+        "android_client_info": {
+          "package_name": "webgroup.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn7Pk9FkeTFyP0-HHb4O5Vi4sFEmTDQfE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
