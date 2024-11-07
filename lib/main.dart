@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'register_page.dart';
+import 'login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const RegisterPage(),
+      home: const LoginPage(),
     );
   }
 }
