@@ -124,24 +124,25 @@ class _HomePageState extends State<HomePage> {
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                // Navigate to UpdateProfilePage and refresh when returning
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
-                );
-                // Refresh the user name after coming back from UpdateProfilePage
-                fetchUserName();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, 
+            if (userName == null) // Only show "Update Profile" button if userName is null
+              ElevatedButton(
+                onPressed: () async {
+                  // Navigate to UpdateProfilePage and refresh when returning
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
+                  );
+                  // Refresh the user name after coming back from UpdateProfilePage
+                  fetchUserName();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, 
+                ),
+                child: const Text(
+                  'Update Profile',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-              child: const Text(
-                'Update Profile',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
           ],
         ),
       ),
