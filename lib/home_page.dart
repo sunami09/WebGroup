@@ -1,18 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
+import 'update_profile.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String userEmail = user?.email ?? 'No email available';
+  _HomePageState createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  String? userName;
+  final User? user = FirebaseAuth.instance.currentUser;
+  final String userEmail = FirebaseAuth.instance.currentUser?.email ?? 'No email available';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserName();
+  }
+
+  Future<void> fetchUserName() async {
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+
+      setState(() {
+        userName = userDoc.exists && userDoc['name'] != null && userDoc['name'].toString().isNotEmpty
+            ? userDoc['name']
+            : null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Page'),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+              ),
+              child: Text(
+                'Welcome, ${userName ?? userEmail.split('@')[0]}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Dashboard'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Dashboard - Coming Soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Profile'),
+              onTap: () async {
+                Navigator.pop(context); // Close the drawer
+                // Navigate to UpdateProfilePage and refresh when returning
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
+                );
+                // Refresh the user name after coming back from UpdateProfilePage
+                fetchUserName();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Add Income/Expenses'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Add Income/Expenses - Coming Soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Log Out'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -20,9 +114,9 @@ class HomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'You are logged in!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              userName != null ? 'Hello, $userName!' : 'Hello, ${userEmail.split('@')[0]}',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
@@ -30,29 +124,25 @@ class HomePage extends StatelessWidget {
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 32),
-            Center(
-              child: ElevatedButton(
+            if (userName == null) // Only show "Update Profile" button if userName is null
+              ElevatedButton(
                 onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushAndRemoveUntil(
+                  // Navigate to UpdateProfilePage and refresh when returning
+                  await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                    (route) => false,
+                    MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
                   );
+                  // Refresh the user name after coming back from UpdateProfilePage
+                  fetchUserName();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent, 
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  backgroundColor: Colors.red, 
                 ),
                 child: const Text(
-                  'Log Out',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
+                  'Update Profile',
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
-            ),
           ],
         ),
       ),
