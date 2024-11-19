@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'update_profile.dart';
 import 'all_transactions.dart';
+import 'add_transaction.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -89,8 +90,9 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Add Income/Expenses'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add Income/Expenses - Coming Soon')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddTransactionPage()),
                 );
               },
             ),
