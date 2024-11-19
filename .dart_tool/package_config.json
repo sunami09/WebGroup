@@ -32,6 +32,24 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "cloud_firestore",
+      "rootUri": "file:///Users/sunami/.pub-cache/hosted/pub.dev/cloud_firestore-5.4.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "cloud_firestore_platform_interface",
+      "rootUri": "file:///Users/sunami/.pub-cache/hosted/pub.dev/cloud_firestore_platform_interface-6.4.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "cloud_firestore_web",
+      "rootUri": "file:///Users/sunami/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.3.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "collection",
       "rootUri": "file:///Users/sunami/.pub-cache/hosted/pub.dev/collection-1.18.0",
       "packageUri": "lib/",
@@ -242,7 +260,7 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2024-11-07T07:57:55.795430Z",
+  "generated": "2024-11-19T18:45:36.644314Z",
   "generator": "pub",
   "generatorVersion": "3.5.3",
   "flutterRoot": "file:///Users/sunami/467/flutter",
