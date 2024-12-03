@@ -125,7 +125,7 @@ class _ReceiptScannerPageState extends State<ReceiptScannerPage> {
       String text) async {
     // Replace 'YOUR_OPENAI_API_KEY' with your actual OpenAI API key.
     // Do not hardcode API keys; use environment variables or secure storage.
-    const apiKey = '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';
+    const apiKey = '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';
     const endpoint = 'https://api.openai.com/v1/chat/completions';
 
     final response = await http.post(
@@ -202,66 +202,77 @@ Output format:
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Receipt Scanner'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _selectedImageBytes != null
-                ? Image.memory(
-                    _selectedImageBytes!,
-                    height: 300,
-                    width: 300,
-                    fit: BoxFit.cover,
-                  )
-                : const Text(
-                    'No image selected',
-                    style: TextStyle(fontSize: 18),
-                  ),
-            const SizedBox(height: 20),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Receipt Scanner'),
+    ),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _selectedImageBytes != null
+              ? Image.memory(
+                  _selectedImageBytes!,
+                  height: 300,
+                  width: 300,
+                  fit: BoxFit.cover,
+                )
+              : const Text(
+                  'No image selected',
+                  style: TextStyle(fontSize: 18),
+                ),
+          const SizedBox(height: 20),
+          if (!kIsWeb) // Hide "Take a Picture" button on web
             ElevatedButton.icon(
               icon: const Icon(Icons.camera),
               label: const Text('Take a Picture'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white, // Text color
+              ),
               onPressed: () => _pickImage(ImageSource.camera),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.photo_library),
-              label: const Text('Select from Gallery'),
-              onPressed: () => _pickImage(ImageSource.gallery),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.photo_library),
+            label: const Text('Select from Gallery'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white, // Text color
             ),
-            const SizedBox(height: 20),
-            if (_isProcessing)
-              const CircularProgressIndicator()
-            else if (_transactions.isNotEmpty)
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _transactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = _transactions[index];
-                    return ListTile(
-                      title: Text(
-                          "${transaction['category']} - \$${transaction['amount']}"),
-                      subtitle: Text(
-                          "${transaction['description']} (${transaction['type']})"),
-                      trailing: SizedBox(
-                        width: 100, // Constrain the width of the trailing widget
-                        child: ElevatedButton(
-                          onPressed: () => _addTransaction(transaction),
-                          child: const Text('Add'),
+            onPressed: () => _pickImage(ImageSource.gallery),
+          ),
+          const SizedBox(height: 20),
+          if (_isProcessing)
+            const CircularProgressIndicator()
+          else if (_transactions.isNotEmpty)
+            Expanded(
+              child: ListView.builder(
+                itemCount: _transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = _transactions[index];
+                  return ListTile(
+                    title: Text(
+                        "${transaction['category']} - \$${transaction['amount']}"),
+                    subtitle: Text(
+                        "${transaction['description']} (${transaction['type']})"),
+                    trailing: SizedBox(
+                      width: 100, // Constrain the width of the trailing widget
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white, // Text color
                         ),
+                        onPressed: () => _addTransaction(transaction),
+                        child: const Text('Add'),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
-          ],
-        ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
