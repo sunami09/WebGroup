@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionPage extends StatefulWidget {
-  const AddTransactionPage({Key? key}) : super(key: key);
+  final Map<String, dynamic>? prefilledData;
+
+  const AddTransactionPage({Key? key, this.prefilledData}) : super(key: key);
 
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
@@ -14,11 +16,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  String _transactionType = "income";
+  String _transactionType = "income"; // Default to income
   String _category = "Food"; // Default category
   DateTime _selectedDate = DateTime.now();
 
-  // List of categories for the dropdown
   final List<String> _categories = [
     "Food",
     "Salary",
@@ -27,6 +28,23 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     "Bills",
     "Miscellaneous"
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefilledData != null) {
+      final data = widget.prefilledData!;
+      _amountController.text = data['amount'].toString();
+      _descriptionController.text = data['description'] ?? '';
+      _transactionType = data['type'] ?? "income";
+      _category = data['category'] ?? "Food";
+      _selectedDate = data['date'] != null
+          ? (data['date'] is Timestamp
+              ? (data['date'] as Timestamp).toDate()
+              : DateTime.parse(data['date'].toString()))
+          : DateTime.now();
+    }
+  }
 
   Future<void> _addTransaction() async {
     if (!_formKey.currentState!.validate()) return;
@@ -121,7 +139,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _transactionType,
-                  decoration: const InputDecoration(labelText: 'Transaction Type'),
+                  decoration:
+                      const InputDecoration(labelText: 'Transaction Type'),
                   items: const [
                     DropdownMenuItem(value: "income", child: Text("Income")),
                     DropdownMenuItem(value: "expense", child: Text("Expense")),
