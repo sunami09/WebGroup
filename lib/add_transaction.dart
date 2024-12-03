@@ -26,7 +26,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     "Rent",
     "Entertainment",
     "Bills",
-    "Miscellaneous"
+    "Miscellaneous",
+    "Grocery" // Add "Grocery" to match prefilled data
   ];
 
   @override
@@ -37,7 +38,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _amountController.text = data['amount'].toString();
       _descriptionController.text = data['description'] ?? '';
       _transactionType = data['type'] ?? "income";
-      _category = data['category'] ?? "Food";
+      _category = _categories.contains(data['category'])
+          ? data['category']
+          : _categories.first; // Default to the first category if not found
       _selectedDate = data['date'] != null
           ? (data['date'] is Timestamp
               ? (data['date'] as Timestamp).toDate()
@@ -197,8 +200,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       onPressed: () => _selectDate(context),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(120, 40),
-                        backgroundColor: Colors.redAccent, // Button background color
-                        foregroundColor: Colors.white, // Button text color
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
                       ),
                       child: const Text('Select Date'),
                     ),
@@ -210,8 +213,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     onPressed: _addTransaction,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(150, 50),
-                      backgroundColor: Colors.red, // Set button color
-                      foregroundColor: Colors.white, // Set text color to white
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
                     child: const Text('Add Transaction'),
                   ),
