@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:310434481826:android:f2192faf9811c3300879fb",
+        "android_client_info": {
+          "package_name": "com.example.financeapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn7Pk9FkeTFyP0-HHb4O5Vi4sFEmTDQfE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:310434481826:android:504e8aad042ad7a60879fb",
         "android_client_info": {
           "package_name": "webgroup.com"
