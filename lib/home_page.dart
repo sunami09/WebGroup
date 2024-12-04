@@ -5,6 +5,7 @@ import 'login_page.dart';
 import 'update_profile.dart';
 import 'all_transactions.dart';
 import 'add_transaction.dart';
+import 'receiptscanner.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -104,6 +105,17 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt),
+              title: const Text('Receipt Scanner'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ReceiptScannerPage()),
                 );
               },
             ),
