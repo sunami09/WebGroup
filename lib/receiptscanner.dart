@@ -113,9 +113,12 @@ class _ReceiptScannerPageState extends State<ReceiptScannerPage> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _parseTransactionsWithGPT(
-      String text) async {
-    final apiKey = dotenv.env['OPENAI_API_KEY']!;
+  Future<List<Map<String, dynamic>>> _parseTransactionsWithGPT(String text) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null) {
+      throw Exception('API key is missing. Ensure the .env file is loaded.');
+    }
+
     const endpoint = 'https://api.openai.com/v1/chat/completions';
 
     final response = await http.post(
@@ -135,18 +138,18 @@ class _ReceiptScannerPageState extends State<ReceiptScannerPage> {
           {
             "role": "user",
             "content": """
-Parse the following receipt into a list of transactions with fields: amount, type (income/expense), category, and description.
+  Parse the following receipt into a list of transactions with fields: amount, type (income/expense), category, and description.
 
-Text:
-$text
+  Text:
+  $text
 
-Output format:
-[
-  {"amount": 25, "type": "expense", "category": "Food", "description": "Dinner"},
-  {"amount": 800, "type": "expense", "category": "Rent", "description": "Monthly rent"},
-  {"amount": 15, "type": "expense", "category": "Miscellaneous", "description": "Snacks"}
-]
-"""
+  Output format:
+  [
+    {"amount": 25, "type": "expense", "category": "Food", "description": "Dinner"},
+    {"amount": 800, "type": "expense", "category": "Rent", "description": "Monthly rent"},
+    {"amount": 15, "type": "expense", "category": "Miscellaneous", "description": "Snacks"}
+  ]
+  """
           }
         ],
         "temperature": 0.2,
@@ -154,10 +157,11 @@ Output format:
     );
 
     print('API Response Status Code: ${response.statusCode}');
-    print('API Response Body: ${response.body}');
+    final responseBody = utf8.decode(response.bodyBytes);
+    print('API Response Body: $responseBody');
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(responseBody);
 
       if (data['choices'] == null || data['choices'].isEmpty) {
         throw Exception('No choices found in the response.');
@@ -169,16 +173,24 @@ Output format:
         throw Exception('No message content found in the response.');
       }
 
+      // Attempt to parse the content as JSON
       try {
         return List<Map<String, dynamic>>.from(jsonDecode(messageContent));
       } catch (e) {
-        throw Exception('Failed to parse JSON from message content: $e');
+        // Handle non-JSON responses gracefully
+        print('Non-JSON Response: $messageContent');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $messageContent')),
+        );
+        throw Exception(
+            'The GPT response is not in the expected JSON format. Content: $messageContent');
       }
     } else {
       throw Exception(
           'OpenAI API request failed: ${response.statusCode} ${response.reasonPhrase} ${response.body}');
     }
   }
+
 
   Future<void> _navigateToAddTransactionPage(
       Map<String, dynamic> transaction, int index) async {
