@@ -5,8 +5,9 @@ import 'package:intl/intl.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final Map<String, dynamic>? prefilledData;
+  final VoidCallback? onTransactionAdded; // Callback to update the parent list
 
-  const AddTransactionPage({Key? key, this.prefilledData}) : super(key: key);
+  const AddTransactionPage({Key? key, this.prefilledData, this.onTransactionAdded}) : super(key: key);
 
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
@@ -67,11 +68,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           'date': _selectedDate,
         });
 
+        // Show a success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Transaction added successfully!')),
         );
 
-        Navigator.pop(context); // Return to the previous page
+        // Call the callback to update the parent list
+        if (widget.onTransactionAdded != null) {
+          widget.onTransactionAdded!();
+        }
+
+        // Return to the previous page
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -142,8 +150,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _transactionType,
-                  decoration:
-                      const InputDecoration(labelText: 'Transaction Type'),
+                  decoration: const InputDecoration(labelText: 'Transaction Type'),
                   items: const [
                     DropdownMenuItem(value: "income", child: Text("Income")),
                     DropdownMenuItem(value: "expense", child: Text("Expense")),
