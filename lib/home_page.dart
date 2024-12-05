@@ -5,6 +5,7 @@ import 'login_page.dart';
 import 'update_profile.dart';
 import 'all_transactions.dart';
 import 'add_transaction.dart';
+import 'dashboard_page.dart';
 import 'receiptscanner.dart';
 
 class HomePage extends StatefulWidget {
@@ -67,8 +68,9 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Dashboard'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Dashboard - Coming Soon')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DashboardPage()),
                 );
               },
             ),
