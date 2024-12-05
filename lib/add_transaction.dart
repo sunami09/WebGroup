@@ -4,7 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionPage extends StatefulWidget {
-  const AddTransactionPage({Key? key}) : super(key: key);
+  final Map<String, dynamic>? prefilledData;
+  final VoidCallback? onTransactionAdded; // Callback to update the parent list
+
+  const AddTransactionPage({Key? key, this.prefilledData, this.onTransactionAdded}) : super(key: key);
 
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
@@ -14,19 +17,38 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  String _transactionType = "income";
+  String _transactionType = "income"; // Default to income
   String _category = "Food"; // Default category
   DateTime _selectedDate = DateTime.now();
 
-  // List of categories for the dropdown
   final List<String> _categories = [
     "Food",
     "Salary",
     "Rent",
     "Entertainment",
     "Bills",
-    "Miscellaneous"
+    "Miscellaneous",
+    "Grocery" // Add "Grocery" to match prefilled data
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefilledData != null) {
+      final data = widget.prefilledData!;
+      _amountController.text = data['amount'].toString();
+      _descriptionController.text = data['description'] ?? '';
+      _transactionType = data['type'] ?? "income";
+      _category = _categories.contains(data['category'])
+          ? data['category']
+          : _categories.first; // Default to the first category if not found
+      _selectedDate = data['date'] != null
+          ? (data['date'] is Timestamp
+              ? (data['date'] as Timestamp).toDate()
+              : DateTime.parse(data['date'].toString()))
+          : DateTime.now();
+    }
+  }
 
   Future<void> _addTransaction() async {
     if (!_formKey.currentState!.validate()) return;
@@ -46,11 +68,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           'date': _selectedDate,
         });
 
+        // Show a success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Transaction added successfully!')),
         );
 
-        Navigator.pop(context); // Return to the previous page
+        // Call the callback to update the parent list
+        if (widget.onTransactionAdded != null) {
+          widget.onTransactionAdded!();
+        }
+
+        // Return to the previous page
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -178,8 +207,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       onPressed: () => _selectDate(context),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(120, 40),
-                        backgroundColor: Colors.redAccent, // Button background color
-                        foregroundColor: Colors.white, // Button text color
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
                       ),
                       child: const Text('Select Date'),
                     ),
@@ -191,8 +220,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     onPressed: _addTransaction,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(150, 50),
-                      backgroundColor: Colors.red, // Set button color
-                      foregroundColor: Colors.white, // Set text color to white
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
                     child: const Text('Add Transaction'),
                   ),
