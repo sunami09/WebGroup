@@ -2,68 +2,97 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({Key? key}) : super(key: key);
+
+  Future<Map<String, dynamic>> fetchDashboardData() async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return {'transactions': [], 'totalIncome': 0.0, 'totalExpenses': 0.0, 'netBalance': 0.0, 'categoryData': {}};
+    }
+
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final savings = (userDoc.data()?['savings'] ?? 0.0) as double;
+
+    final transactionsSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('transactions')
+        .orderBy('date', descending: true)
+        .get();
+
+    final transactions = transactionsSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['date'] = (data['date'] as Timestamp).toDate();
+      return data;
+    }).toList();
+
+    double totalIncome = 0.0;
+    double totalExpenses = 0.0;
+    Map<String, double> categoryData = {};
+
+    for (var transaction in transactions) {
+      final double amount = (transaction['amount'] ?? 0).toDouble();
+      final String type = transaction['type'] ?? '';
+      final String category = transaction['category'] ?? 'Others';
+
+      if (type.toLowerCase() == 'income') {
+        totalIncome += amount;
+      } else if (type.toLowerCase() == 'expense') {
+        totalExpenses += amount;
+        categoryData[category] = (categoryData[category] ?? 0) + amount;
+      }
+    }
+
+    final netBalance = savings + totalIncome - totalExpenses;
+
+    return {
+      'transactions': transactions,
+      'totalIncome': totalIncome,
+      'totalExpenses': totalExpenses,
+      'netBalance': netBalance,
+      'categoryData': categoryData,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String userId = user?.uid ?? '';
-    final String displayName = user?.displayName ?? 'User';
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: Text('Hi, $displayName!',
-            style: const TextStyle(color: Colors.white)),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('transactions')
-            .orderBy('date', descending: true)
-            .limit(5)
-            .snapshots(),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchDashboardData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: Colors.white));
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (snapshot.hasError) {
             return const Center(
               child: Text(
-                'No transactions found. Add some to see insights.',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                'Error loading dashboard',
+                style: TextStyle(color: Colors.red, fontSize: 18),
               ),
             );
           }
 
-          final transactions = snapshot.data!.docs;
-          double totalIncome = 0;
-          double totalExpenses = 0;
-          final Map<String, double> categoryData = {};
-
-          for (var transaction in transactions) {
-            final data = transaction.data() as Map<String, dynamic>;
-            final double amount = data['amount']?.toDouble() ?? 0.0;
-            final String type = data['type'] ?? '';
-            final String category = data['category'] ?? 'Others';
-
-            if (type == 'income') {
-              totalIncome += amount;
-            } else if (type == 'expense') {
-              totalExpenses += amount;
-            }
-
-            categoryData[category] = (categoryData[category] ?? 0) + amount;
-          }
-
-          double netBalance = totalIncome - totalExpenses;
+          final data = snapshot.data!;
+          final transactions = data['transactions'] as List<Map<String, dynamic>>;
+          final totalIncome = data['totalIncome'] as double;
+          final totalExpenses = data['totalExpenses'] as double;
+          final netBalance = data['netBalance'] as double;
+          final categoryData = data['categoryData'] as Map<String, double>;
 
           return SingleChildScrollView(
             child: Padding(
@@ -73,11 +102,9 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   _buildMetricsRow(totalIncome, totalExpenses, netBalance),
                   const SizedBox(height: 20),
-                  _buildRevenueFlowChart(totalIncome, totalExpenses),
+                  _buildTransactionList(transactions),
                   const SizedBox(height: 20),
-                  _buildMonthlyExpensesChartWithLegend(categoryData),
-                  const SizedBox(height: 20),
-                  _buildTransactionHistory(transactions),
+                  _buildCategoryPieChart(categoryData),
                 ],
               ),
             ),
@@ -87,307 +114,49 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricsRow(
-      double totalIncome, double totalExpenses, double netBalance) {
+  Widget _buildMetricsRow(double totalIncome, double totalExpenses, double netBalance) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildMetricCard('Total Income', '\$${totalIncome.toStringAsFixed(2)}',
-            Colors.green),
-        const SizedBox(width: 10),
-        _buildMetricCard('Total Expenses',
-            '\$${totalExpenses.toStringAsFixed(2)}', Colors.red),
-        const SizedBox(width: 10),
-        _buildMetricCard(
-            'Net Balance', '\$${netBalance.toStringAsFixed(2)}', Colors.blue),
+        _buildMetricCard('Total Income', '\$${totalIncome.toStringAsFixed(2)}', Colors.green),
+        _buildMetricCard('Total Expenses', '\$${totalExpenses.toStringAsFixed(2)}', Colors.red),
+        _buildMetricCard('Net Balance', '\$${netBalance.toStringAsFixed(2)}', Colors.blue),
       ],
     );
   }
 
   Widget _buildMetricCard(String title, String value, Color color) {
     return Expanded(
-      child: GestureDetector(
-        onTap: () {},
-        child: Card(
-          color: Colors.grey[900],
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            child: Column(
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      child: Card(
+        color: Colors.grey[900],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildRevenueFlowChart(double totalIncome, double totalExpenses) {
+  Widget _buildTransactionList(List<Map<String, dynamic>> transactions) {
+    // Limit the transactions to the first 5 items
+    final limitedTransactions = transactions.take(5).toList();
+
     return Card(
       color: Colors.grey[900],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Revenue Flow',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 280,
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        right: 30.0), // Reduce right padding
-                    child: BarChart(
-                      BarChartData(
-                        borderData: FlBorderData(
-                          show: true,
-                          border: Border.all(color: Colors.white38),
-                        ),
-                        gridData: FlGridData(
-                          drawVerticalLine: false,
-                          getDrawingHorizontalLine: (value) =>
-                              const FlLine(color: Colors.white24, strokeWidth: 1),
-                          horizontalInterval:
-                              totalIncome / 4, // Adjusted for proper spacing
-                        ),
-                        titlesData: FlTitlesData(
-                          leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(
-                                showTitles: false), // No left-side labels
-                          ),
-                          rightTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true, // Show numbers on the right
-                              reservedSize: 40,
-                              getTitlesWidget: (value, meta) {
-                                // Prevent duplicate topmost label
-                                if (value >= totalIncome / 1000) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Text(
-                                  '${value.toInt()}k',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 12),
-                                );
-                              },
-                            ),
-                            axisNameWidget: const Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Text(
-                                'Amount (in thousands)',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 14),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            axisNameSize: 32,
-                          ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 40,
-                              getTitlesWidget: (value, meta) {
-                                switch (value.toInt()) {
-                                  case 0:
-                                    return const Text(
-                                      'Income',
-                                      style: TextStyle(
-                                          color: Colors.white70, fontSize: 12),
-                                    );
-                                  case 1:
-                                    return const Text(
-                                      'Expenses',
-                                      style: TextStyle(
-                                          color: Colors.white70, fontSize: 12),
-                                    );
-                                  default:
-                                    return const SizedBox.shrink();
-                                }
-                              },
-                            ),
-                            axisNameWidget: const Padding(
-                              padding: EdgeInsets.only(top: 16.0),
-                              child: Text(
-                                'Category',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 14),
-                              ),
-                            ),
-                            axisNameSize: 32,
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: false, // Remove top labels
-                            ),
-                          ),
-                        ),
-                        barGroups: [
-                          BarChartGroupData(
-                            x: 0,
-                            barRods: [
-                              BarChartRodData(
-                                toY: totalIncome / 1000,
-                                color: Colors.green,
-                                width: 20,
-                              ),
-                            ],
-                          ),
-                          BarChartGroupData(
-                            x: 1,
-                            barRods: [
-                              BarChartRodData(
-                                toY: totalExpenses / 1000,
-                                color: Colors.red,
-                                width: 20,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  
-  List<PieChartSectionData> _buildDoughnutChartSections(Map<String, double> categoryData) {
-    const List<Color> colors = [
-      Colors.purple,
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.red,
-    ];
-
-    categoryData.values.reduce((a, b) => a + b);
-
-    int index = 0;
-    return categoryData.entries.map((entry) {
-      final color = colors[index % colors.length];
-      index++;
-
-      return PieChartSectionData(
-        color: color,
-        value: entry.value,
-        radius: 70, // The radius of the doughnut sections
-        title: '', // No title inside the chart
-      );
-    }).toList();
-  }
-  Widget _buildMonthlyExpensesChartWithLegend(Map<String, double> categoryData) {
-    return Card(
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Monthly Expenses',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 250,
-                    child: PieChart(
-                      PieChartData(
-                        sectionsSpace: 4,
-                        centerSpaceRadius: 40,
-                        sections: _buildDoughnutChartSections(categoryData),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20), // Add space between chart and legend
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: categoryData.entries.map((entry) {
-                    final colorIndex = categoryData.keys.toList().indexOf(entry.key) % 5;
-                    final colors = [
-                      Colors.purple,
-                      Colors.blue,
-                      Colors.green,
-                      Colors.orange,
-                      Colors.red,
-                    ];
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0), // Add spacing between items
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10, // Smaller legend color box
-                            height: 10,
-                            color: colors[colorIndex],
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${entry.key}: ${((entry.value / categoryData.values.reduce((a, b) => a + b)) * 100).toStringAsFixed(1)}%',
-                            style: const TextStyle(color: Colors.white, fontSize: 10), // Smaller font size
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildTransactionHistory(List<QueryDocumentSnapshot> transactions) {
-    return Card(
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -395,38 +164,136 @@ class DashboardPage extends StatelessWidget {
           children: [
             const Text(
               'Recent Transactions',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: transactions.length,
+              itemCount: limitedTransactions.length,
               itemBuilder: (context, index) {
-                final transaction =
-                    transactions[index].data() as Map<String, dynamic>;
+                final transaction = limitedTransactions[index];
+                final amount = transaction['amount'] ?? 0;
+                final category = transaction['category'] ?? 'Unknown';
+                final type = transaction['type'] ?? 'Unknown';
+                final date = transaction['date'] as DateTime;
+                final formattedDate = DateFormat('yyyy-MM-dd').format(date);
+                final isIncome = type.toLowerCase() == 'income';
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        transaction['category'] ?? 'Unknown',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 14),
+                        category,
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                       Text(
-                        '\$${transaction['amount'] ?? 0.0}',
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 14),
+                        formattedDate,
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                      Text(
+                        '\$${amount.toStringAsFixed(2)}',
+                        style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontSize: 14),
                       ),
                     ],
                   ),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPieChart(Map<String, double> categoryData) {
+    if (categoryData.isEmpty) {
+      return const Center(
+        child: Text(
+          'No expense categories to display',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      );
+    }
+
+    final totalAmount = categoryData.values.reduce((a, b) => a + b);
+
+    return Card(
+      color: Colors.grey[900],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Expense Categories',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sections: categoryData.entries
+                            .map((entry) => PieChartSectionData(
+                                  color: Colors.primaries[
+                                      categoryData.keys.toList().indexOf(entry.key) %
+                                          Colors.primaries.length],
+                                  value: entry.value,
+                                  title: '',
+                                  radius: 50,
+                                ))
+                            .toList(),
+                        centerSpaceRadius: 40,
+                        sectionsSpace: 4,
+                        pieTouchData: PieTouchData(
+                          touchCallback: (FlTouchEvent event, PieTouchResponse? pieTouchResponse) {
+                            final touchedSection = pieTouchResponse?.touchedSection;
+                            if (touchedSection != null) {
+                              final index = touchedSection.touchedSectionIndex;
+                              final key = categoryData.keys.toList()[index];
+                              final percentage = ((categoryData[key]! / totalAmount) * 100).toStringAsFixed(1);
+                              debugPrint('$key: $percentage%');
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: categoryData.entries.map((entry) {
+                    final colorIndex = categoryData.keys.toList().indexOf(entry.key) %
+                        Colors.primaries.length;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            color: Colors.primaries[colorIndex],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            entry.key,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ],
         ),
