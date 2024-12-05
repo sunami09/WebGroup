@@ -34,9 +34,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
 Future<void> _registerUser() async {
   setState(() {
-    _isLoading = true;
     _errorMessage = '';
   });
+
+  // Ensure the password meets all criteria
+  if (!_isLengthValid || !_hasUppercase || !_hasLowercase || !_hasSpecialCharacter) {
+    setState(() {
+      _errorMessage = 'Password does not meet the required criteria.';
+    });
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
   try {
     await _auth.createUserWithEmailAndPassword(
       email: _emailController.text.trim(),
