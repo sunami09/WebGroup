@@ -1,1 +1,6 @@
 assets/.env
+build/
+.dart_tool/
+*.class
+*.jar
+*.last_build_id
