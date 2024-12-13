@@ -13,6 +13,7 @@ import 'all_transactions.dart';
 import 'add_transaction.dart';
 import 'dashboard_page.dart';
 import 'receiptscanner.dart';
+import 'setting.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -150,21 +151,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Page'),
-        backgroundColor: Colors.black, // Updated to match other pages
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-            tooltip: 'Log Out',
-          ),
-        ],
+        backgroundColor: Colors.black,
       ),
       drawer: _buildDrawer(displayName, netWorth),
       body: SingleChildScrollView(
@@ -219,7 +206,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildStockUpdates() {
     return Card(
-      color: Colors.grey[900], // Dark theme for consistency
+      color: Colors.grey[900],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: stockSymbols.map((symbol) {
@@ -229,7 +216,7 @@ class _HomePageState extends State<HomePage> {
               symbol,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white, // Improved contrast
+                color: Colors.white,
               ),
             ),
             trailing: Text(
@@ -240,7 +227,7 @@ class _HomePageState extends State<HomePage> {
                   : 'N/A',
               style: const TextStyle(
                 fontSize: 16,
-                color: Colors.white, // Improved contrast
+                color: Colors.white,
               ),
             ),
           );
@@ -300,96 +287,117 @@ class _HomePageState extends State<HomePage> {
   }
 
   Drawer _buildDrawer(String displayName, double netWorth) {
-    final formattedNetWorth =
-        NumberFormat.currency(symbol: '\$').format(netWorth);
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(displayName),
-            accountEmail: Text(userEmail),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: NetworkImage(
-                user?.photoURL ??
-                    'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg', // Default avatar URL
-              ),
+  final formattedNetWorth = NumberFormat.currency(symbol: '\$').format(netWorth);
 
+  return Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        UserAccountsDrawerHeader(
+          accountName: Text(displayName),
+          accountEmail: Text(userEmail),
+          currentAccountPicture: CircleAvatar(
+            backgroundColor: Colors.white,
+            backgroundImage: NetworkImage(
+              user?.photoURL ??
+                  'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg',
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const DashboardPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Profile'),
-            onTap: () async {
-              Navigator.pop(context);
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
-              );
-              fetchUserData();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Add Income/Expenses'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddTransactionPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.list),
-            title: const Text('All Transactions'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt),
-            title: const Text('Receipt Scanner'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ReceiptScannerPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Log Out'),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+          // Add formattedNetWorth in the header
+          decoration: BoxDecoration(color: Colors.black),
+          otherAccountsPictures: [
+            Text(
+              'Net Worth: $formattedNetWorth',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        ListTile(
+          leading: const Icon(Icons.dashboard),
+          title: const Text('Dashboard'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.edit),
+          title: const Text('Edit Profile'),
+          onTap: () async {
+            Navigator.pop(context);
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
+            );
+            fetchUserData();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: const Text('Add Income/Expenses'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.list),
+          title: const Text('All Transactions'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.receipt),
+          title: const Text('Receipt Scanner'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReceiptScannerPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: const Text('Settings'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.logout),
+          title: const Text('Log Out'),
+          onTap: () async {
+            await FirebaseAuth.instance.signOut();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (route) => false,
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
 
   void _launchURL(String url) async {
     Uri uri = Uri.parse(url);
