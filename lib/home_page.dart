@@ -13,6 +13,7 @@ import 'all_transactions.dart';
 import 'add_transaction.dart';
 import 'dashboard_page.dart';
 import 'receiptscanner.dart';
+import 'settings.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -301,97 +302,107 @@ class _HomePageState extends State<HomePage> {
   }
 
   Drawer _buildDrawer(String displayName, double netWorth) {
-    final formattedNetWorth =
-        NumberFormat.currency(symbol: '\$').format(netWorth);
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(displayName),
-            accountEmail: Text(userEmail),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: NetworkImage(
-                userInfo['profilePic']??
-                    'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg', 
-              ),
-
+  final formattedNetWorth = NumberFormat.currency(symbol: '\$').format(netWorth);
+  return Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        UserAccountsDrawerHeader(
+          accountName: Text(displayName),
+          accountEmail: Text(userEmail),
+          currentAccountPicture: CircleAvatar(
+            backgroundColor: Colors.white,
+            backgroundImage: NetworkImage(
+              userInfo['profilePic'] ??
+                  'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg',
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const DashboardPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Profile'),
-            onTap: () async {
-              Navigator.pop(context);
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
-              );
-              fetchUserData();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Add Income/Expenses'),
-            onTap: () async {
-              Navigator.pop(context);
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddTransactionPage()),
-              );
-              fetchUserData();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.list),
-            title: const Text('All Transactions'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt),
-            title: const Text('Receipt Scanner'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ReceiptScannerPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Log Out'),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        ListTile(
+          leading: const Icon(Icons.dashboard),
+          title: const Text('Dashboard'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.edit),
+          title: const Text('Edit Profile'),
+          onTap: () async {
+            Navigator.pop(context);
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
+            );
+            fetchUserData();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: const Text('Add Income/Expenses'),
+          onTap: () async {
+            Navigator.pop(context);
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+            );
+            fetchUserData();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.list),
+          title: const Text('All Transactions'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.receipt),
+          title: const Text('Receipt Scanner'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReceiptScannerPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: const Text('Settings'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.logout),
+          title: const Text('Log Out'),
+          onTap: () async {
+            await FirebaseAuth.instance.signOut();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (route) => false,
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _launchURL(String url) async {
     Uri uri = Uri.parse(url);

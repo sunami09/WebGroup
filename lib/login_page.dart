@@ -16,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String _errorMessage = '';
   bool _isLoading = false; // Loading state
+  bool _obscurePassword = true; // Password visibility state
 
   Future<void> _signInWithEmailAndPassword() async {
     setState(() {
@@ -88,6 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 20),
                       TextField(
                         controller: _passwordController,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Colors.grey[400]),
@@ -103,8 +105,17 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(color: Colors.redAccent),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
-                        obscureText: true,
                       ),
                       const SizedBox(height: 20),
                       if (_errorMessage.isNotEmpty) ...[
