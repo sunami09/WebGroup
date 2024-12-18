@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'uploadpic.dart';
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({Key? key}) : super(key: key);
 
@@ -43,12 +43,14 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       controllers['phone'] =
           TextEditingController(text: userInfo['phone'] ?? '');
       controllers['sex'] = TextEditingController(text: userInfo['sex'] ?? '');
+      controllers['profilePic'] = TextEditingController(
+          text: userInfo['profilePic'] ??
+              'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
     }
   }
 
   void toggleEditing() async {
     if (isEditing) {
-      // Save changes to Firebase when toggling off edit mode
       final User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
@@ -60,7 +62,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           'sex': controllers['sex']?.text,
         }, SetOptions(merge: true));
 
-        // Refresh the user information to reflect changes
         await fetchUserInfo();
       }
     }
@@ -72,7 +73,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
 
   @override
   void dispose() {
-    // Dispose controllers to free up resources
     controllers.values.forEach((controller) => controller.dispose());
     super.dispose();
   }
@@ -92,9 +92,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         child: ElevatedButton(
           onPressed: toggleEditing,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isEditing ? Colors.green : Colors.redAccent, // Button background color
+            backgroundColor: isEditing ? Colors.green : Colors.redAccent,
             minimumSize: const Size(double.infinity, 50),
-            foregroundColor: Colors.white, // Text color
+            foregroundColor: Colors.white,
           ),
           child: Text(
             isEditing ? 'Save Changes' : 'Edit',
@@ -107,7 +107,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
 
   Widget buildProfileView() {
     if (userInfo.isEmpty) {
-      // Show a message if profile is not updated
       return const Center(
         child: Text(
           'Profile not updated, please update it.',
@@ -121,11 +120,19 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       );
     }
 
-    // Display profile data if it exists
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Highlighted name field
+        CircleAvatar(
+          radius: 60,
+          backgroundColor: Colors.grey[300],
+          backgroundImage: NetworkImage(
+            userInfo['profilePic'] ??
+                'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg',
+          ),
+        ),
+        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         Text(
           userInfo['name'] ?? 'Name Not Found',
           style: const TextStyle(
@@ -134,11 +141,11 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           ),
         ),
         const SizedBox(height: 16),
-        // Card-like display for the rest of the fields
         buildProfileCard('Age', userInfo['age']?.toString() ?? 'Not Found'),
         buildProfileCard(
             'Occupation', userInfo['occupation'] ?? 'Not Found'),
-        buildProfileCard('Savings', userInfo['savings']?.toString() ?? 'Not Found'),
+        buildProfileCard(
+            'Savings', userInfo['savings']?.toString() ?? 'Not Found'),
         buildProfileCard('Phone', userInfo['phone'] ?? 'Not Found'),
         buildProfileCard('Sex', userInfo['sex'] ?? 'Not Found'),
       ],
@@ -170,8 +177,31 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
 
   Widget buildEditForm() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        CircleAvatar(
+          radius: 60,
+          backgroundColor: Colors.grey[300],
+          backgroundImage: NetworkImage(
+            controllers['profilePic']!.text,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            pickAndUploadPhoto(context, setState, userInfo);
+          },
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(150, 40),
+            textStyle: const TextStyle(fontSize: 16),
+          ),
+          child: const Text(
+            'Add Photo',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+
+        const SizedBox(height: 16),
         editField('Name', controllers['name']!),
         editField('Age', controllers['age']!),
         editField('Occupation', controllers['occupation']!),

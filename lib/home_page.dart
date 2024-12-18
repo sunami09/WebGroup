@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   // Data holders
   Map<String, dynamic> stockData = {};
   List<dynamic> newsData = [];
-
+  Map<String, dynamic> userInfo = {};
   bool isLoadingStock = true;
   bool isLoadingNews = true;
 
@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
 
         double totalIncome = 0.0;
         double totalExpenses = 0.0;
-
+        
         for (var doc in transactionsSnapshot.docs) {
           final transaction = doc.data();
           final double amount = (transaction['amount'] ?? 0).toDouble();
@@ -90,6 +90,7 @@ class _HomePageState extends State<HomePage> {
               ? data['name']
               : null;
           netWorth = netBalance;
+          userInfo = userDoc.data() as Map<String, dynamic>? ?? {};
         });
       } catch (e) {
         print('Error fetching user data: $e');
@@ -312,8 +313,8 @@ class _HomePageState extends State<HomePage> {
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               backgroundImage: NetworkImage(
-                user?.photoURL ??
-                    'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg', // Default avatar URL
+                userInfo['profilePic']??
+                    'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg', 
               ),
 
             ),
@@ -344,12 +345,13 @@ class _HomePageState extends State<HomePage> {
           ListTile(
             leading: const Icon(Icons.add),
             title: const Text('Add Income/Expenses'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AddTransactionPage()),
               );
+              fetchUserData();
             },
           ),
           ListTile(
