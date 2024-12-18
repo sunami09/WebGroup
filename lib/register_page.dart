@@ -23,6 +23,9 @@ class _RegisterPageState extends State<RegisterPage> {
   // Loading state
   bool _isLoading = false;
 
+  // Password visibility state
+  bool _obscurePassword = true;
+
   void _validatePassword(String password) {
     setState(() {
       _isLengthValid = password.length >= 8;
@@ -32,51 +35,49 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
-Future<void> _registerUser() async {
-  setState(() {
-    _errorMessage = '';
-  });
-
-  // Ensure the password meets all criteria
-  if (!_isLengthValid || !_hasUppercase || !_hasLowercase || !_hasSpecialCharacter) {
+  Future<void> _registerUser() async {
     setState(() {
-      _errorMessage = 'Password does not meet the required criteria.';
+      _errorMessage = '';
     });
-    return;
+
+    // Ensure the password meets all criteria
+    if (!_isLengthValid || !_hasUppercase || !_hasLowercase || !_hasSpecialCharacter) {
+      setState(() {
+        _errorMessage = 'Password does not meet the required criteria.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Show a success notification
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully registered!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      Navigator.pop(context); // Navigate back after showing the SnackBar
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Registration failed. Please try again.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    await _auth.createUserWithEmailAndPassword(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    // Show a success notification
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Successfully registered!'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
-      ),
-    );
-
-    Navigator.pop(context); // Navigate back after showing the SnackBar
-  } catch (e) {
-    setState(() {
-      _errorMessage = 'Registration failed. Please try again.';
-    });
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
-  }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +133,7 @@ Future<void> _registerUser() async {
                       TextField(
                         controller: _passwordController,
                         onChanged: _validatePassword,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Colors.grey[400]),
@@ -147,8 +149,17 @@ Future<void> _registerUser() async {
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(color: Colors.redAccent),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
-                        obscureText: true,
                       ),
                       const SizedBox(height: 20),
                       // Password validation indicators
