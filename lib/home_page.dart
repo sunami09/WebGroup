@@ -252,43 +252,50 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildNewsUpdates() {
-    return Column(
-      children: newsData.map((article) {
-        return Card(
-          color: Colors.grey[900],
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ListTile(
-            leading: article['urlToImage'] != null
-                ? Image.network(
-                    article['urlToImage'],
-                    width: 100,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    width: 100,
-                    color: Colors.grey,
-                    child: const Icon(Icons.image, color: Colors.white),
-                  ),
-            title: Text(
-              article['title'] ?? 'No Title',
-              style: const TextStyle(color: Colors.white),
-            ),
-            subtitle: Text(
-              article['description'] ?? 'No Description',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70),
-            ),
-            onTap: () {
-              if (article['url'] != null) {
-                _launchURL(article['url']);
-              }
-            },
+  return Column(
+    children: newsData.map((article) {
+      return Card(
+        color: Colors.grey[900],
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: ListTile(
+          leading: article['urlToImage'] != null
+              ? Image.network(
+                  article['urlToImage'],
+                  width: 100,
+                  fit: BoxFit.cover,
+                )
+              : Container(
+                  width: 100,
+                  color: Colors.grey,
+                  child: const Icon(Icons.image, color: Colors.white),
+                ),
+          title: Text(
+            article['title'] ?? 'No Title',
+            style: const TextStyle(color: Colors.white),
           ),
-        );
-      }).toList(),
-    );
-  }
+          subtitle: Text(
+            article['description'] ?? 'No Description',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          onTap: () {
+            final url = article['url'];
+            print('URL: $url'); // Log the URL to debug
+            if (url != null && url.isNotEmpty) {
+              _launchURL(url);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No URL available for this article.')),
+              );
+            }
+          },
+        ),
+      );
+    }).toList(),
+  );
+}
+
 
   Widget _buildSectionTitle(String title) {
     return Text(
@@ -405,12 +412,37 @@ class _HomePageState extends State<HomePage> {
 
 
   void _launchURL(String url) async {
-    Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    if (url.isEmpty || url == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open the article.')),
+        const SnackBar(content: Text('No URL available for this article.')),
+      );
+      return;
+    }
+
+    // Ensure the URL is properly formatted
+    if (!url.startsWith('http')) {
+      url = 'https://$url';
+    }
+
+    try {
+      // Test URL connectivity
+      final response = await http.head(Uri.parse(url)).timeout(
+        const Duration(seconds: 5), // Set a timeout
+        onTimeout: () => http.Response('Timeout', 408),
+      );
+
+      if (response.statusCode == 200) {
+        Uri uri = Uri.parse(url);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The link is currently unavailable.')),
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the article.')),
       );
     }
   }
